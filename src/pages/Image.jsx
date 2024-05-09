@@ -16,13 +16,14 @@ import {
   EmailShareButton,
 } from "react-share";
 
+import { saveAs } from "file-saver";
+
 const Image = () => {
   const { id } = useParams();
   const [imageData, setImageData] = useState(null);
   const api = import.meta.env.VITE_API_KEY;
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-
   const [selectedOption, setSelectedOption] = useState("");
 
   const handleCheckboxChange = (option) => {
@@ -37,7 +38,7 @@ const Image = () => {
         );
         setImageData(response.data.hits[0]);
         setLoading(false);
-        console.log(response.data);
+        // console.log(response.data);
       } catch (error) {
         console.error("Error fetching image data:", error.message);
       }
@@ -45,6 +46,41 @@ const Image = () => {
 
     fetchImageData();
   }, [id, api]);
+
+  const handleDownload = () => {
+    let downloadUrl = "";
+
+    switch (selectedOption) {
+      case "small":
+        downloadUrl = imageData.webformatURL.replace("_640", "_340"); 
+        break;
+      case "medium":
+        downloadUrl = imageData.webformatURL.replace("_640", "_640"); 
+        break;
+      case "big":
+        downloadUrl = imageData.largeImageURL; 
+        break;
+      case "original":
+        downloadUrl = imageData.webformatURL; 
+        break;
+      default:
+        // Use default URL (e.g., original size) if no option selected
+        downloadUrl = imageData.webformatURL;
+    }
+
+    // Fetch image data as a blob
+    axios
+      .get(downloadUrl, {
+        responseType: "blob",
+      })
+      .then((response) => {
+        // Save blob as a file using file-saver library
+        saveAs(response.data, `${imageData.tags.split(',')[0].trim()}.jpg`);
+      })
+      .catch((error) => {
+        console.error("Error downloading image:", error.message);
+      });
+  };
 
   return (
     <>
@@ -73,9 +109,7 @@ const Image = () => {
                   </div>
                   <div>
                     <div className="mb-10 mt-5 xl:mt-0 md:mt-0">
-                      {/* <div className="flex justify-between"> */}
                       <p className="font-semibold text-xl ">Download</p>
-                      {/* </div> */}
                       <div className="grid grid-cols-1 divide-y">
                         <div className="flex justify-between items-center gap-10 mt-5 p-3">
                           <div>
@@ -129,13 +163,15 @@ const Image = () => {
                             />
                           </div>
                         </div>
-                        <Link to={imageData.previewURL}>
-                          <button className="bg-green-500 text-white w-full mt-5">
-                            Download For Free
-                          </button>
-                        </Link>
+                        <button
+                          className="bg-green-500 text-white w-full mt-5"
+                          onClick={handleDownload}
+                        >
+                          Download For Free
+                        </button>
                       </div>
                     </div>
+                    {/* Information Section */}
                     <div>
                       <p className="text-xl font-semibold">Information</p>
                       <div className="grid grid-cols-3 gap-4 mt-5">
@@ -165,6 +201,7 @@ const Image = () => {
                         </div>
                       </div>
                     </div>
+                    {/* Share Section */}
                     <div className="mt-5">
                       <div>
                         <p className="text-xl font-semibold">Share: </p>
